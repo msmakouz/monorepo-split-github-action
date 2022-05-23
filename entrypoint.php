@@ -34,6 +34,23 @@ note($cloningMessage);
 $commandLine = 'git clone -- https://' . $config->getAccessToken() . '@' . $hostRepositoryOrganizationName . ' ' . $cloneDirectory;
 exec_with_note($commandLine);
 
+exec('git branch', $branches);
+$branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
+
+if (\in_array($config->getBranch()->getName(), $branches, true)) {
+    $branch = $config->getBranch()->getName();
+    note(\sprintf('Branch %s founded.', $branch));
+} else {
+    note(\sprintf('Branch %s is not exist.', $config->getBranch()->getName()));
+    exec('git tag', $tags);
+
+    $branch = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
+    note(\sprintf('The latest tag is %s.', $branch));
+
+    exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $branch));
+}
+
+exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
 
 note('Cleaning destination repository of old files');
 // We're only interested in the .git directory, move it to $TARGET_DIR and use it from now on
@@ -89,11 +106,11 @@ if ($changedFiles) {
     note('Adding git commit');
     exec_with_output_print('git add .');
 
-    $message = sprintf('Pushing git commit with "%s" message to "%s"', $commitMessage, $config->getBranch());
+    $message = sprintf('Pushing git commit with "%s" message to "%s"', $commitMessage, $config->getBranch()->getName());
     note($message);
 
     exec("git commit --message '$commitMessage'");
-    exec('git push --quiet origin ' . $config->getBranch());
+    exec('git push --quiet origin ' . $config->getBranch()->getName());
 } else {
     note('No files to change');
 }
@@ -101,13 +118,13 @@ if ($changedFiles) {
 
 // push tag if present
 if ($config->getTag()) {
-    $message = sprintf('Publishing "%s"', $config->getTag());
+    $message = sprintf('Publishing "%s"', (string) $config->getTag());
     note($message);
 
-    $commandLine = sprintf('git tag %s -m "%s"', $config->getTag(), $message);
+    $commandLine = sprintf('git tag %s -m "%s"', (string) $config->getTag(), $message);
     exec_with_note($commandLine);
 
-    exec_with_note('git push --quiet origin ' . $config->getTag());
+    exec_with_note('git push --quiet origin ' . (string) $config->getTag());
 }
 
 

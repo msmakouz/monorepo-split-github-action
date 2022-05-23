@@ -8,18 +8,26 @@ namespace Symplify\MonorepoSplit;
 
 final class Config
 {
+    private Branch $branch;
+    private ?Tag $tag = null;
+
     public function __construct(
         private string $packageDirectory,
         private string $repositoryHost,
         private string $repositoryOrganization,
         private string $repositoryName,
         private string $commitHash,
-        private string $branch,
-        private ?string $tag,
+        string $branch,
+        ?string $tag,
         private ?string $userName,
         private ?string $userEmail,
         private string $accessToken
     ) {
+        if ($tag !== null) {
+            $this->tag = new Tag($tag);
+        }
+
+        $this->branch = new Branch($branch, $this->tag);
     }
 
     public function getPackageDirectory(): string
@@ -37,12 +45,12 @@ final class Config
         return $this->userEmail;
     }
 
-    public function getBranch(): ?string
+    public function getBranch(): Branch
     {
         return $this->branch;
     }
 
-    public function getTag(): ?string
+    public function getTag(): ?Tag
     {
         return $this->tag;
     }
