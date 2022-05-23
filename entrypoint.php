@@ -95,6 +95,7 @@ switch (true) {
     default:
         note(\sprintf('The latest tag is %s.', $recentTag));
         exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $recentTag));
+        exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
 }
 
 // avoids doing the git commit failing if there are no changes to be commit, see https://stackoverflow.com/a/8123841/1348344
