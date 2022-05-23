@@ -33,24 +33,6 @@ note($cloningMessage);
 
 $commandLine = 'git clone -- https://' . $config->getAccessToken() . '@' . $hostRepositoryOrganizationName . ' ' . $cloneDirectory;
 exec_with_note($commandLine);
-exec_with_output_print('git remote -v');
-exec('git branch', $branches);
-$branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
-
-if (\in_array($config->getBranch()->getName(), $branches, true)) {
-    $branch = $config->getBranch()->getName();
-    note(\sprintf('Branch %s founded.', $branch));
-} else {
-    note(\sprintf('Branch %s is not exist.', $config->getBranch()->getName()));
-    exec('git tag', $tags);
-
-    $branch = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
-    note(\sprintf('The latest tag is %s.', $branch));
-
-    exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $branch));
-}
-
-exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
 
 note('Cleaning destination repository of old files');
 // We're only interested in the .git directory, move it to $TARGET_DIR and use it from now on
@@ -91,7 +73,24 @@ chdir($buildDirectory);
 $restoreChdirMessage = sprintf('Changing directory from "%s" to "%s"', $formerWorkingDirectory, $buildDirectory);
 note($restoreChdirMessage);
 
+exec_with_output_print('git remote -v');
+exec('git branch', $branches);
+$branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
 
+if (\in_array($config->getBranch()->getName(), $branches, true)) {
+    $branch = $config->getBranch()->getName();
+    note(\sprintf('Branch %s founded.', $branch));
+} else {
+    note(\sprintf('Branch %s is not exist.', $config->getBranch()->getName()));
+    exec('git tag', $tags);
+
+    $branch = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
+    note(\sprintf('The latest tag is %s.', $branch));
+
+    exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $branch));
+}
+
+exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
 
 // avoids doing the git commit failing if there are no changes to be commit, see https://stackoverflow.com/a/8123841/1348344
 exec_with_output_print('git status');
