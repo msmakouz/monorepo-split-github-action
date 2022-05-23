@@ -23,7 +23,7 @@ final class Config
         private ?string $userEmail,
         private string $accessToken
     ) {
-        if ($tag !== null) {
+        if (!empty($tag)) {
             $this->tag = new Tag($tag);
         }
 
