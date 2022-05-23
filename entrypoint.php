@@ -77,20 +77,25 @@ exec_with_output_print('git remote -v');
 exec('git branch', $branches);
 $branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
 
-if (\in_array($config->getBranch()->getName(), $branches, true)) {
-    $branch = $config->getBranch()->getName();
-    note(\sprintf('Branch %s founded.', $branch));
-} else {
-    note(\sprintf('Branch %s is not exist.', $config->getBranch()->getName()));
-    exec('git tag', $tags);
+exec('git tag', $tags);
+$recentTag = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
 
-    $branch = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
-    note(\sprintf('The latest tag is %s.', $branch));
-
-    exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $branch));
+switch (true) {
+    // branch already exist
+    case \in_array($config->getBranch()->getName(), $branches, true):
+        $branch = $config->getBranch()->getName();
+        note(\sprintf('Branch %s founded.', $branch));
+        exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
+        break;
+    // empty repository. Don't have any branches or tags
+    case $branches === [] && empty($recentTag):
+        note('New repository, do nothing with branches.');
+        break;
+    // creating branch from the latest tag (e.g. branch 3.0 from the last tag 2.9.15 and new tag 3.0.0)
+    default:
+        note(\sprintf('The latest tag is %s.', $recentTag));
+        exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $recentTag));
 }
-
-exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
 
 // avoids doing the git commit failing if there are no changes to be commit, see https://stackoverflow.com/a/8123841/1348344
 exec_with_output_print('git status');
