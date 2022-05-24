@@ -56,11 +56,15 @@ $commitMessage = createCommitMessage($config->getCommitHash());
 
 $formerWorkingDirectory = getcwd();
 chdir($buildDirectory);
-
+exec_with_output_print('git remote -v');
+exec_with_output_print('git branch');
 // changing branch
 exec('git branch', $branches);
 $branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
 note('Founded branches:');
+
+note((string) count($branches));
+
 print_array($branches);
 $branchExist = \in_array($config->getBranch()->getName(), $branches, true);
 $branchExist ?
