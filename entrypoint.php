@@ -60,23 +60,33 @@ chdir($buildDirectory);
 // changing branch
 exec('git branch', $branches);
 $branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
+note('Founded branches:');
+print_array($branches);
+$branchExist = \in_array($config->getBranch()->getName(), $branches, true);
+$branchExist ?
+    note(sprintf('Branch %s already exist.', $config->getBranch()->getName())) :
+    note(sprintf('Branch %s is not exist.', $config->getBranch()->getName()));
 
 exec('git tag', $tags);
+note('Founded tags:');
+print_array($tags);
 
-if ($config->getTag()) {
-    note('Founding branch by latest tag.');
+if (!$branchExist) {
+    if ($config->getTag()) {
+        note('Founding branch by latest tag.');
 
-    $recentTag = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
-} else {
-    note('Founding last minor branch.');
+        $recentTag = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
+    } else {
+        note('Founding last minor branch.');
 
-    $parts = \explode(Tag::DELIMITER, $config->getBranch()->getName());
+        $parts = \explode(Tag::DELIMITER, $config->getBranch()->getName());
 
-    if (isset($parts[0]) && isset($parts[1])) {
-        for ($i = (int) $parts[1]; $i > 0; $i--) {
-            if (\in_array($parts[0] . Tag::DELIMITER . $i, $branches, true)) {
-                $latestMinorBranch = $parts[0] . Tag::DELIMITER . $i;
-                break;
+        if (isset($parts[0]) && isset($parts[1])) {
+            for ($i = (int) $parts[1]; $i > 0; $i--) {
+                if (\in_array($parts[0] . Tag::DELIMITER . $i, $branches, true)) {
+                    $latestMinorBranch = $parts[0] . Tag::DELIMITER . $i;
+                    break;
+                }
             }
         }
     }
@@ -84,7 +94,7 @@ if ($config->getTag()) {
 
 switch (true) {
     // branch already exist
-    case \in_array($config->getBranch()->getName(), $branches, true):
+    case $branchExist:
         $branch = $config->getBranch()->getName();
         note(\sprintf('Branch %s founded.', $branch));
         exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
@@ -163,12 +173,10 @@ if ($config->getTag()) {
     exec_with_note('git push --quiet origin ' . (string) $config->getTag());
 }
 
-
 // restore original directory to avoid nesting WTFs
 chdir($formerWorkingDirectory);
 $chdirMessage = sprintf('Changing directory from "%s" to "%s"', $buildDirectory, $formerWorkingDirectory);
 note($chdirMessage);
-
 
 function createCommitMessage(string $commitSha): string
 {
@@ -187,13 +195,9 @@ function error(string $message): void
     echo PHP_EOL . PHP_EOL . "\033[0;31m[ERROR] " . $message . "\033[0m" . PHP_EOL . PHP_EOL;
 }
 
-
-
-
 function list_directory_files(string $directory): void {
     exec_with_output_print('ls -la ' . $directory);
 }
-
 
 /********************* helper functions *********************/
 
@@ -203,13 +207,11 @@ function exec_with_note(string $commandLine): void
     exec($commandLine);
 }
 
-
 function exec_with_output_print(string $commandLine): void
 {
     exec($commandLine, $outputLines);
     echo implode(PHP_EOL, $outputLines);
 }
-
 
 function setupGitCredentials(Config $config): void
 {
@@ -219,5 +221,12 @@ function setupGitCredentials(Config $config): void
 
     if ($config->getUserEmail()) {
         exec('git config --global user.email ' . $config->getUserEmail());
+    }
+}
+
+function print_array(array $data): void
+{
+    foreach ($data as $element) {
+        note((string) $element);
     }
 }
