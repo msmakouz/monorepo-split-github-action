@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Symplify\MonorepoSplit\Config;
 use Symplify\MonorepoSplit\ConfigFactory;
 use Symplify\MonorepoSplit\Exception\ConfigurationException;
+use Symplify\MonorepoSplit\Tag;
 
 require_once __DIR__ . '/src/autoload.php';
 
@@ -86,7 +87,25 @@ foreach ($tags as $tg) {
 }
 note('------------------');
 
-$recentTag = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
+if ($config->getTag()) {
+    note('Founding branch by latest tag.');
+
+    $recentTag = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
+} else {
+    note('Founding last minor branch.');
+
+    $parts = \explode(Tag::DELIMITER, $config->getBranch()->getName());
+
+    if (isset($parts[0]) && isset($parts[1])) {
+        for ($i = (int) $parts[1]; $i > 0; $i--) {
+            if (\in_array($parts[0] . Tag::DELIMITER . $i, $branches, true)) {
+                $latestMinorBranch = $parts[0] . Tag::DELIMITER . $i;
+                break;
+            }
+        }
+    }
+}
+
 note('Recent tag ' . $recentTag);
 
 switch (true) {
@@ -100,10 +119,15 @@ switch (true) {
     case $branches === [] && empty($recentTag):
         note('New repository, do nothing with branches.');
         break;
-    // creating branch from the latest tag (e.g. branch 3.0 from the last tag 2.9.15 and new tag 3.0.0)
-    default:
+    // tag exists. Creating branch from the latest tag (e.g. branch 3.0 from the last tag 2.9.15 and new tag 3.0.0)
+    case !empty($recentTag):
         note(\sprintf('The latest tag is %s.', $recentTag));
         exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $recentTag));
+        exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
+    // from latest minor branch
+    default:
+        note(\sprintf('Latest minor branch is %s.', $latestMinorBranch));
+        exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $latestMinorBranch));
         exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
 }
 
