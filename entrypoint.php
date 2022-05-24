@@ -122,7 +122,9 @@ switch (true) {
             exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $latestMinorBranch));
             exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
         } else {
-            note('The latest minor branch is not found, staying on the main branch.');
+            note('The latest minor branch is not found, creating from the main branch.');
+            exec_with_note(\sprintf('git branch %s', $config->getBranch()->getName()));
+            exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
         }
 }
 
