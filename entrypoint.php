@@ -57,6 +57,7 @@ $commitMessage = createCommitMessage($config->getCommitHash());
 $formerWorkingDirectory = getcwd();
 chdir($buildDirectory);
 exec_with_output_print('git remote -v');
+exec_with_output_print('git pull');
 exec_with_output_print('git branch');
 // changing branch
 exec('git branch', $branches);
