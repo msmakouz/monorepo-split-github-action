@@ -44,6 +44,7 @@ final class Branch
 
             return false;
         });
+        echo 'count in findMostRecentTag is ' . \count($tags);
 
         if ($tags === []) {
             return null;
