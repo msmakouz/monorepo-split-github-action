@@ -53,12 +53,11 @@ exec('rm -rf ' . $cloneDirectory);
 // WARNING! this function happen before we change directory
 // if we do this in split repository, the original hash is missing there and it will fail
 $commitMessage = createCommitMessage($config->getCommitHash());
-exec_with_output_print('git remote -v');
+
 $formerWorkingDirectory = getcwd();
 chdir($buildDirectory);
 
 // changing branch
-exec_with_output_print('git remote -v');
 exec('git branch', $branches);
 $branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
 
@@ -113,6 +112,8 @@ switch (true) {
         }
 }
 
+chdir($formerWorkingDirectory);
+
 // copy the package directory including all hidden files to the clone dir
 // make sure the source dir ends with `/.` so that all contents are copied (including .github etc)
 $copyMessage = sprintf('Copying contents to git repo of "%s" branch', $config->getCommitHash());
@@ -125,6 +126,8 @@ list_directory_files($buildDirectory);
 
 $restoreChdirMessage = sprintf('Changing directory from "%s" to "%s"', $formerWorkingDirectory, $buildDirectory);
 note($restoreChdirMessage);
+
+chdir($buildDirectory);
 
 // avoids doing the git commit failing if there are no changes to be commit, see https://stackoverflow.com/a/8123841/1348344
 exec_with_output_print('git status');
