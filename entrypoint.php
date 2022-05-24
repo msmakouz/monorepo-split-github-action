@@ -78,7 +78,9 @@ exec('git branch', $branches);
 $branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $branch)), $branches);
 
 exec('git tag', $tags);
+echo $tags;
 $recentTag = $config->getBranch()->findMostRecentTag(\array_map(static fn(string $tag) => \trim($tag), $tags));
+echo $recentTag;
 
 switch (true) {
     // branch already exist
