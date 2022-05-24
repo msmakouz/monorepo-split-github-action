@@ -80,13 +80,6 @@ $branches = \array_map(static fn (string $branch) => trim(str_replace('*', '', $
 
 exec('git tag', $tags);
 
-note((string) count($tags));
-note('------------------');
-foreach ($tags as $tg) {
-    note((string) $tg);
-}
-note('------------------');
-
 if ($config->getTag()) {
     note('Founding branch by latest tag.');
 
@@ -106,8 +99,6 @@ if ($config->getTag()) {
     }
 }
 
-note('Recent tag ' . $recentTag);
-
 switch (true) {
     // branch already exist
     case \in_array($config->getBranch()->getName(), $branches, true):
@@ -126,9 +117,13 @@ switch (true) {
         exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
     // from latest minor branch
     default:
-        note(\sprintf('Latest minor branch is %s.', $latestMinorBranch));
-        exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $latestMinorBranch));
-        exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
+        if (!empty($latestMinorBranch)) {
+            note(\sprintf('Latest minor branch is %s.', $latestMinorBranch));
+            exec_with_note(\sprintf('git branch %s %s', $config->getBranch()->getName(), $latestMinorBranch));
+            exec_with_note(\sprintf('git checkout %s', $config->getBranch()->getName()));
+        } else {
+            note('The latest minor branch is not found, staying on the main branch.');
+        }
 }
 
 // avoids doing the git commit failing if there are no changes to be commit, see https://stackoverflow.com/a/8123841/1348344
